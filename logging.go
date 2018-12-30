@@ -76,6 +76,7 @@ func InitLogging(verbosity Verbosity) {
 	backend := logging.NewLogBackend(os.Stderr, "", 0)
 	backendLeveled := logging.AddModuleLevel(backend)
 	backendLeveled.SetLevel(level, "")
+	logging.SetBackend(backendLeveled)
 }
 
 func logFormatter() logging.Formatter {
