@@ -3,7 +3,10 @@
 package cli
 
 import (
+	"fmt"
 	"os"
+	"strconv"
+	"strings"
 
 	"golang.org/x/crypto/ssh/terminal"
 	"gopkg.in/op/go-logging.v1"
@@ -68,9 +71,11 @@ func (v *Verbosity) fromInt(i int) error {
 
 // InitLogging initialises logging backends.
 func InitLogging(verbosity Verbosity) {
-	logLevel = logging.Level(verbosity)
+	level := logging.Level(verbosity)
 	logging.SetFormatter(logFormatter())
-	setLogBackend(logging.NewLogBackend(os.Stderr, "", 0))
+	backend := logging.NewLogBackend(os.Stderr, "", 0)
+	backendLeveled := logging.AddModuleLevel(backend)
+	backendLeveled.SetLevel(level, "")
 }
 
 func logFormatter() logging.Formatter {

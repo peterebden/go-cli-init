@@ -2,6 +2,9 @@ package cli
 
 import (
 	"fmt"
+	"os"
+	"path"
+	"reflect"
 	"strings"
 
 	"github.com/jessevdk/go-flags"
@@ -33,7 +36,7 @@ func ParseFlags(appname string, data interface{}, args []string, opts flags.Opti
 // Also dies if any unexpected arguments are passed.
 // It returns the active command if there is one.
 func ParseFlagsOrDie(appname string, data interface{}) string {
-	return ParseFlagsFromArgsOrDie(appname, version, data, os.Args)
+	return ParseFlagsFromArgsOrDie(appname, data, os.Args)
 }
 
 // ParseFlagsFromArgsOrDie is similar to ParseFlagsOrDie but allows control over the
