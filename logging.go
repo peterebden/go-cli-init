@@ -5,6 +5,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 
@@ -80,6 +81,9 @@ func InitFileLogging(stderrVerbosity, fileVerbosity Verbosity, filename string) 
 	if filename == "" {
 		InitLogging(stderrVerbosity)
 		return nil
+	}
+	if err := os.MkdirAll(path.Dir(filename), os.ModeDir|0755); err != nil {
+		return err
 	}
 	f, err := os.Create(filename)
 	if err != nil {
