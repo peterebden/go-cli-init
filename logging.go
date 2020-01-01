@@ -71,17 +71,46 @@ func (v *Verbosity) fromInt(i int) error {
 
 // InitLogging initialises logging backends.
 func InitLogging(verbosity Verbosity) {
-	level := logging.Level(verbosity)
-	logging.SetFormatter(logFormatter())
-	backend := logging.NewLogBackend(os.Stderr, "", 0)
-	backendLeveled := logging.AddModuleLevel(backend)
-	backendLeveled.SetLevel(level, "")
-	logging.SetBackend(backendLeveled)
+	logging.SetBackend(initLogging(verbosity, os.Stderr))
 }
 
-func logFormatter() logging.Formatter {
+// InitFileLogging initialises logging backends, both to stderr and to a file.
+// If the file path is empty then it will be ignored.
+func InitFileLogging(stderrVerbosity, fileVerbosity Verbosity, filename string) error {
+	if filename == "" {
+		InitLogging(stderrVerbosity)
+		return nil
+	}
+	f, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	logging.SetBackend(
+		initLogging(stderrVerbosity, os.Stderr),
+		initLogging(fileVerbosity, f),
+	)
+	return nil
+}
+
+// MustInitFileLogging is like InitFileLogging but dies on any errors.
+func MustInitFileLogging(stderrVerbosity, fileVerbosity Verbosity, filename string) {
+	if err := InitFileLogging(stderrVerbosity, fileVerbosity, filename); err != nil {
+		log.Fatalf("Failed to open log file: %s", err)
+	}
+}
+
+func initLogging(verbosity Verbosity, out *os.File) logging.LeveledBackend {
+	level := logging.Level(verbosity)
+	backend := logging.NewLogBackend(out, "", 0)
+	backendFormatted := logging.NewBackendFormatter(backend, logFormatter(out))
+	backendLeveled := logging.AddModuleLevel(backendFormatted)
+	backendLeveled.SetLevel(level, "")
+	return backendLeveled
+}
+
+func logFormatter(f *os.File) logging.Formatter {
 	formatStr := "%{time:15:04:05.000} %{level:7s}: %{message}"
-	if terminal.IsTerminal(int(os.Stderr.Fd())) {
+	if terminal.IsTerminal(int(f.Fd())) {
 		formatStr = "%{color}" + formatStr + "%{color:reset}"
 	}
 	return logging.MustStringFormatter(formatStr)
