@@ -1,6 +1,9 @@
 go_library(
     name = "cli",
-    srcs = ["cli.go", "logging.go"],
+    srcs = [
+        "flags.go",
+        "logging.go",
+    ],
     deps = [
         ":go-flags",
         ":logging",
@@ -12,7 +15,17 @@ go_test(
     name = "logging_test",
     srcs = ["logging_test.go"],
     deps = [
+        ":cli",
         ":logging",
+        ":testify",
+    ],
+)
+
+go_test(
+    name = "flags_test",
+    srcs = ["flags_test.go"],
+    deps = [
+        ":cli",
         ":testify",
     ],
 )
@@ -27,6 +40,13 @@ go_get(
     name = "terminal",
     get = "golang.org/x/crypto/ssh/terminal",
     revision = "505ab145d0a99da450461ae2c1a9f6cd10d1f447",
+    deps = [":unix"],
+)
+
+go_get(
+    name = "unix",
+    get = "golang.org/x/sys/unix",
+    revision = "1b2967e3c290b7c545b3db0deeda16e9be4f98a2",
 )
 
 go_get(

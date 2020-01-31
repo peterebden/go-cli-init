@@ -5,7 +5,9 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jessevdk/go-flags"
 )
@@ -86,4 +88,31 @@ func getUsage(opts interface{}) string {
 		return field.Tag.Get("usage")
 	}
 	return ""
+}
+
+// A Duration is used for flags that represent a time duration; it's just a wrapper
+// around time.Duration that implements the flags.Unmarshaler and
+// encoding.TextUnmarshaler interfaces.
+type Duration time.Duration
+
+// UnmarshalFlag implements the flags.Unmarshaler interface.
+func (d *Duration) UnmarshalFlag(in string) error {
+	d2, err := time.ParseDuration(in)
+	// For backwards compatibility, treat missing units as seconds.
+	if err != nil {
+		if d3, err := strconv.Atoi(in); err == nil {
+			*d = Duration(time.Duration(d3) * time.Second)
+			return nil
+		}
+	}
+	if err != nil {
+		return &flags.Error{Type: flags.ErrMarshal, Message: err.Error()}
+	}
+	*d = Duration(d2)
+	return nil
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface
+func (d *Duration) UnmarshalText(text []byte) error {
+	return d.UnmarshalFlag(string(text))
 }
