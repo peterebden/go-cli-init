@@ -6,6 +6,7 @@ go_library(
     ],
     deps = [
         ":go-flags",
+        ":humanize",
         ":logging",
         ":terminal",
     ],
@@ -72,4 +73,10 @@ go_get(
     name = "spew",
     get = "github.com/davecgh/go-spew/spew",
     revision = "ecdeabc65495df2dec95d7c4a4c3e021903035e5",
+)
+
+go_get(
+    name = "humanize",
+    get = "github.com/dustin/go-humanize",
+    revision = "v1.0.0",
 )

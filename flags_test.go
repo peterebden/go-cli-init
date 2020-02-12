@@ -31,3 +31,13 @@ func TestDurationDefault(t *testing.T) {
 	assert.Equal(t, 0, len(extraArgs))
 	assert.EqualValues(t, 3*time.Hour, opts.D)
 }
+
+func TestByteSize(t *testing.T) {
+	opts := struct {
+		S ByteSize `short:"s"`
+	}{}
+	_, extraArgs, err := ParseFlags("test", &opts, []string{"test", "-s=2M"}, 0, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(extraArgs))
+	assert.EqualValues(t, 2000000, opts.S)
+}

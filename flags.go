@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/jessevdk/go-flags"
 )
 
@@ -115,4 +116,18 @@ func (d *Duration) UnmarshalFlag(in string) error {
 // UnmarshalText implements the encoding.TextUnmarshaler interface
 func (d *Duration) UnmarshalText(text []byte) error {
 	return d.UnmarshalFlag(string(text))
+}
+
+// A ByteSize is used for flags that represent some quantity of bytes that can be
+// passed as human-readable quantities (eg. "10G").
+type ByteSize uint64
+
+// UnmarshalFlag implements the flags.Unmarshaler interface.
+func (b *ByteSize) UnmarshalFlag(in string) error {
+	b2, err := humanize.ParseBytes(in)
+	*b = ByteSize(b2)
+	if err != nil {
+		return &flags.Error{Type: flags.ErrMarshal, Message: err.Error()}
+	}
+	return nil
 }
