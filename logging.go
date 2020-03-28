@@ -6,14 +6,16 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 
 	"golang.org/x/crypto/ssh/terminal"
 	"gopkg.in/op/go-logging.v1"
 )
 
-var log = logging.MustGetLogger("cli")
+var log = MustGetLogger()
 
 // A Verbosity is used as a flag to define logging verbosity.
 type Verbosity logging.Level
@@ -71,8 +73,11 @@ func (v *Verbosity) fromInt(i int) error {
 }
 
 // InitLogging initialises logging backends.
-func InitLogging(verbosity Verbosity) {
-	logging.SetBackend(initLogging(verbosity, os.Stderr))
+func InitLogging(verbosity Verbosity) LogLevelInfo {
+	backend := initLogging(verbosity, os.Stderr)
+	logging.SetBackend(backend)
+	logInfo.backend = backend
+	return &logInfo
 }
 
 // InitFileLogging initialises logging backends, both to stderr and to a file.
@@ -119,3 +124,57 @@ func logFormatter(f *os.File) logging.Formatter {
 	}
 	return logging.MustStringFormatter(formatStr)
 }
+
+// getLoggerName returns the name of the calling package as a logger name (e.g. "github.com.peterebden.cli")
+func getLoggerName(skip int) string {
+	_, file, _, ok := runtime.Caller(skip)
+	if !ok {
+		return "<unknown>" // Shouldn't really happen but best to handle it.
+	}
+	return strings.Replace(strings.TrimPrefix(path.Dir(file), ".go"), "/", ".", -1)
+}
+
+// MustGetLogger is a wrapper around go-logging's function of the same name. It automatically determines a logger name.
+// The logger is registered and will be returned by ModuleLevels().
+func MustGetLogger() *logging.Logger {
+	name := getLoggerName(2) // Skip back to the calling function.
+	logInfo.Register(name)
+	return logging.MustGetLogger(name)
+}
+
+// A LogLevelInfo describes and can modify levels of the set of registered loggers.
+type LogLevelInfo interface{
+	// ModuleLevels returns the level of all loggers retrieved by MustGetLogger().
+	ModuleLevels() map[string]logging.Level
+	// SetLevel modifies the level of a specific logger.
+	SetLevel(level logging.Level, module string)
+}
+
+type logLevelInfo struct{
+	backend logging.LeveledBackend
+	modules map[string]struct{}
+	mutex sync.Mutex
+}
+
+func (info *logLevelInfo) Register(name string) {
+	info.mutex.Lock()
+	defer info.mutex.Unlock()
+	info.modules[name] = struct{}{}
+}
+
+func (info *logLevelInfo) ModuleLevels() map[string]logging.Level {
+	info.mutex.Lock()
+	defer info.mutex.Unlock()
+	levels := map[string]logging.Level{}
+	levels[""] = info.backend.GetLevel("")
+	for module := range info.modules {
+		levels[module] = info.backend.GetLevel(module)
+	}
+	return levels
+}
+
+func (info *logLevelInfo) SetLevel(level logging.Level, module string) {
+	info.backend.SetLevel(level, module)
+}
+
+var logInfo = logLevelInfo{modules: map[string]struct{}{}}
