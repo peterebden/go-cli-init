@@ -137,7 +137,11 @@ func getLoggerName(skip int) string {
 // MustGetLogger is a wrapper around go-logging's function of the same name. It automatically determines a logger name.
 // The logger is registered and will be returned by ModuleLevels().
 func MustGetLogger() *logging.Logger {
-	name := getLoggerName(2) // Skip back to the calling function.
+	return MustGetLoggerNamed(getLoggerName(2)) // 2 to skip back to the calling function.
+}
+
+// MustGetLoggerNamed is like MustGetLogger but lets the caller choose the name.
+func MustGetLoggerNamed(name string) *logging.Logger {
 	logInfo.Register(name)
 	return logging.MustGetLogger(name)
 }
