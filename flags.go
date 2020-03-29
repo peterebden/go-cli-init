@@ -20,6 +20,7 @@ type CompletionHandler func(parser *flags.Parser, items []flags.Completion)
 // It may exit if certain options are encountered (eg. --help).
 func ParseFlags(appname string, data interface{}, args []string, opts flags.Options, completionHandler CompletionHandler) (*flags.Parser, []string, error) {
 	parser := flags.NewNamedParser(path.Base(args[0]), opts)
+	parser.NamespaceDelimiter = "_"
 	if completionHandler != nil {
 		parser.CompletionHandler = func(items []flags.Completion) { completionHandler(parser, items) }
 	}
