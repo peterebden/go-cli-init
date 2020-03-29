@@ -82,30 +82,29 @@ func InitLogging(verbosity Verbosity) LogLevelInfo {
 
 // InitFileLogging initialises logging backends, both to stderr and to a file.
 // If the file path is empty then it will be ignored.
-func InitFileLogging(stderrVerbosity, fileVerbosity Verbosity, filename string) error {
+func InitFileLogging(stderrVerbosity, fileVerbosity Verbosity, filename string) (LogLevelInfo, error) {
+	info := InitLogging(stderrVerbosity)
 	if filename == "" {
-		InitLogging(stderrVerbosity)
-		return nil
+		return info, nil
 	}
 	if err := os.MkdirAll(path.Dir(filename), os.ModeDir|0755); err != nil {
-		return err
+		return info, err
 	}
 	f, err := os.Create(filename)
 	if err != nil {
-		return err
+		return info, err
 	}
-	logging.SetBackend(
-		initLogging(stderrVerbosity, os.Stderr),
-		initLogging(fileVerbosity, f),
-	)
-	return nil
+	logging.SetBackend(logInfo.backend, initLogging(fileVerbosity, f))
+	return info, nil
 }
 
 // MustInitFileLogging is like InitFileLogging but dies on any errors.
-func MustInitFileLogging(stderrVerbosity, fileVerbosity Verbosity, filename string) {
-	if err := InitFileLogging(stderrVerbosity, fileVerbosity, filename); err != nil {
+func MustInitFileLogging(stderrVerbosity, fileVerbosity Verbosity, filename string) LogLevelInfo {
+	info, err := InitFileLogging(stderrVerbosity, fileVerbosity, filename)
+	if err != nil {
 		log.Fatalf("Failed to open log file: %s", err)
 	}
+	return info
 }
 
 func initLogging(verbosity Verbosity, out *os.File) logging.LeveledBackend {
