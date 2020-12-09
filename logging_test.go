@@ -14,6 +14,7 @@ func TestParseVerbosity(t *testing.T) {
 	assert.NoError(t, v.UnmarshalFlag("1"))
 	assert.EqualValues(t, logging.WARNING, v)
 	assert.NoError(t, v.UnmarshalFlag("v"))
+
 	assert.EqualValues(t, logging.NOTICE, v)
 	assert.Error(t, v.UnmarshalFlag("blah"))
 }

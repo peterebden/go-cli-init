@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
-	"github.com/jessevdk/go-flags"
+	"github.com/thought-machine/go-flags"
 )
 
 // A CompletionHandler is the type of function that our flags library uses to handle completions.

@@ -52,7 +52,7 @@ go_get(
 
 go_get(
     name = "go-flags",
-    get = "github.com/jessevdk/go-flags",
+    get = "github.com/thought-machine/go-flags",
     revision = "v1.4.0",
 )
 
