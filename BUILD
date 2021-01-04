@@ -62,21 +62,39 @@ go_get(
     install = [
         "assert",
         "require",
-        "vendor/github.com/davecgh/go-spew/spew",
-        "vendor/github.com/pmezard/go-difflib/difflib",
     ],
-    revision = "f390dcf405f7b83c997eac1b06768bb9f44dec18",
-    deps = [":spew"],
+    revision = "v1.6.0",
+    test_only = True,
+    deps = [
+        ":difflib",
+        ":spew",
+        ":yaml",
+    ],
 )
 
 go_get(
     name = "spew",
     get = "github.com/davecgh/go-spew/spew",
-    revision = "ecdeabc65495df2dec95d7c4a4c3e021903035e5",
+    revision = "v1.1.0",
+    test_only = True,
+)
+
+go_get(
+    name = "difflib",
+    get = "github.com/pmezard/go-difflib/difflib",
+    revision = "v1.0.0",
+    test_only = True,
 )
 
 go_get(
     name = "humanize",
     get = "github.com/dustin/go-humanize",
     revision = "v1.0.0",
+)
+
+go_get(
+    name = "yaml",
+    get = "gopkg.in/yaml.v3",
+    revision = "eeeca48fe7764f320e4870d231902bf9c1be2c08",
+    test_only = True,
 )

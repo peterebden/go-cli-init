@@ -3,7 +3,9 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"runtime"
@@ -74,7 +76,11 @@ func (v *Verbosity) fromInt(i int) error {
 
 // InitLogging initialises logging backends.
 func InitLogging(verbosity Verbosity) LogLevelInfo {
-	backend := initLogging(verbosity, os.Stderr)
+	return initialiseLogging(verbosity, false)
+}
+
+func initialiseLogging(verbosity Verbosity, structured bool) LogLevelInfo {
+	backend := initLogging(verbosity, os.Stderr, structured)
 	logging.SetBackend(backend)
 	logInfo.backend = backend
 	return &logInfo
@@ -83,7 +89,18 @@ func InitLogging(verbosity Verbosity) LogLevelInfo {
 // InitFileLogging initialises logging backends, both to stderr and to a file.
 // If the file path is empty then it will be ignored.
 func InitFileLogging(stderrVerbosity, fileVerbosity Verbosity, filename string) (LogLevelInfo, error) {
-	info := InitLogging(stderrVerbosity)
+	return InitStructuredLogging(stderrVerbosity, fileVerbosity, filename, false)
+}
+
+// MustInitFileLogging is like InitFileLogging but dies on any errors.
+func MustInitFileLogging(stderrVerbosity, fileVerbosity Verbosity, filename string) LogLevelInfo {
+	return MustInitStructuredLogging(stderrVerbosity, fileVerbosity, filename, false)
+}
+
+// InitStructuredLogging is like InitFileLogging but allows specifying whether the output should be
+// structured as JSON.
+func InitStructuredLogging(stderrVerbosity, fileVerbosity Verbosity, filename string, structured bool) (LogLevelInfo, error) {
+	info := initialiseLogging(stderrVerbosity, structured)
 	if filename == "" {
 		return info, nil
 	}
@@ -94,29 +111,32 @@ func InitFileLogging(stderrVerbosity, fileVerbosity Verbosity, filename string) 
 	if err != nil {
 		return info, err
 	}
-	logging.SetBackend(logInfo.backend, initLogging(fileVerbosity, f))
+	logging.SetBackend(logInfo.backend, initLogging(fileVerbosity, f, structured))
 	return info, nil
 }
 
-// MustInitFileLogging is like InitFileLogging but dies on any errors.
-func MustInitFileLogging(stderrVerbosity, fileVerbosity Verbosity, filename string) LogLevelInfo {
-	info, err := InitFileLogging(stderrVerbosity, fileVerbosity, filename)
+// MustInitStructuredLogging is like InitStructuredLogging but dies on any errors.
+func MustInitStructuredLogging(stderrVerbosity, fileVerbosity Verbosity, filename string, structured bool) LogLevelInfo {
+	info, err := InitStructuredLogging(stderrVerbosity, fileVerbosity, filename, structured)
 	if err != nil {
 		log.Fatalf("Failed to open log file: %s", err)
 	}
 	return info
 }
 
-func initLogging(verbosity Verbosity, out *os.File) logging.LeveledBackend {
+func initLogging(verbosity Verbosity, out *os.File, structured bool) logging.LeveledBackend {
 	level := logging.Level(verbosity)
 	backend := logging.NewLogBackend(out, "", 0)
-	backendFormatted := logging.NewBackendFormatter(backend, logFormatter(out))
+	backendFormatted := logging.NewBackendFormatter(backend, logFormatter(out, structured))
 	backendLeveled := logging.AddModuleLevel(backendFormatted)
 	backendLeveled.SetLevel(level, "")
 	return backendLeveled
 }
 
-func logFormatter(f *os.File) logging.Formatter {
+func logFormatter(f *os.File, structured bool) logging.Formatter {
+	if structured {
+		return jsonFormatter{}
+	}
 	formatStr := "%{time:15:04:05.000} %{level:7s}: %{message}"
 	if terminal.IsTerminal(int(f.Fd())) {
 		formatStr = "%{color}" + formatStr + "%{color:reset}"
@@ -146,17 +166,17 @@ func MustGetLoggerNamed(name string) *logging.Logger {
 }
 
 // A LogLevelInfo describes and can modify levels of the set of registered loggers.
-type LogLevelInfo interface{
+type LogLevelInfo interface {
 	// ModuleLevels returns the level of all loggers retrieved by MustGetLogger().
 	ModuleLevels() map[string]logging.Level
 	// SetLevel modifies the level of a specific logger.
 	SetLevel(level logging.Level, module string)
 }
 
-type logLevelInfo struct{
+type logLevelInfo struct {
 	backend logging.LeveledBackend
 	modules map[string]struct{}
-	mutex sync.Mutex
+	mutex   sync.Mutex
 }
 
 func (info *logLevelInfo) Register(name string) {
@@ -181,3 +201,45 @@ func (info *logLevelInfo) SetLevel(level logging.Level, module string) {
 }
 
 var logInfo = logLevelInfo{modules: map[string]struct{}{}}
+
+type jsonFormatter struct{}
+
+func (f jsonFormatter) Format(calldepth int, r *logging.Record, w io.Writer) error {
+	fn := ""
+	pc, file, line, ok := runtime.Caller(calldepth)
+	if !ok {
+		file = "???"
+		line = 0
+	}
+	if f := runtime.FuncForPC(pc); f != nil {
+		fn = f.Name()
+	}
+	return json.NewEncoder(w).Encode(&jsonEntry{
+		File:   fmt.Sprintf("%s:%d", file, line),
+		Func:   fn,
+		Level:  jsonLevelNames[r.Level],
+		Module: r.Module,
+		Time:   r.Time.Format(jsonTimestampFormat),
+		Msg:    r.Message(),
+	})
+}
+
+var jsonLevelNames = []string{
+	"critical",
+	"error",
+	"warning",
+	"notice",
+	"info",
+	"debug",
+}
+
+type jsonEntry struct {
+	File   string `json:"file"`
+	Func   string `json:"func"`
+	Level  string `json:"level"`
+	Module string `json:"module"`
+	Msg    string `json:"msg"`
+	Time   string `json:"time"`
+}
+
+const jsonTimestampFormat = "2006-01-02T15:04:05.000Z07:00"
