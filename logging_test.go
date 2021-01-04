@@ -24,6 +24,6 @@ func TestJSONFormatter(t *testing.T) {
 	logging.SetFormatter(logFormatter(nil, true))
 	log := logging.MustGetLogger("test_module")
 	log.Infof("hello %s", "world")
-	line := backend.Head().Record.Formatted(1)
+	line := backend.Head().Record.Formatted(0)
 	assert.Equal(t, `{"file":"logging_test.go:27","func":"github.com/peterebden/go-cli-init/cli.TestJSONFormatter","level":"info","module":"test_module","msg":"hello world","time":"1970-01-01T00:00:00.000Z"}`+"\n", line)
 }

@@ -206,7 +206,7 @@ type jsonFormatter struct{}
 
 func (f jsonFormatter) Format(calldepth int, r *logging.Record, w io.Writer) error {
 	fn := ""
-	pc, file, line, ok := runtime.Caller(calldepth)
+	pc, file, line, ok := runtime.Caller(calldepth + 1)
 	if !ok {
 		file = "???"
 		line = 0
