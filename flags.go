@@ -27,7 +27,7 @@ func ParseFlags(appname string, data interface{}, args []string, opts flags.Opti
 	parser.AddGroup(appname+" options", "", data)
 	extraArgs, err := parser.ParseArgs(args[1:])
 	if err != nil {
-		if err.(*flags.Error).Type == flags.ErrHelp {
+		if t, ok := err.(*flags.Error); ok && t.Type == flags.ErrHelp {
 			writeUsage(data)
 			fmt.Printf("%s\n", err)
 			os.Exit(0)
