@@ -1,4 +1,4 @@
-package cli
+package logging
 
 import (
 	"testing"
@@ -25,5 +25,5 @@ func TestJSONFormatter(t *testing.T) {
 	log := logging.MustGetLogger("test_module")
 	log.Infof("hello %s", "world")
 	line := backend.Head().Record.Formatted(0)
-	assert.Equal(t, `{"file":"logging_test.go:27","func":"github.com/peterebden/go-cli-init/cli.TestJSONFormatter","level":"info","module":"test_module","msg":"hello world","time":"1970-01-01T00:00:00.000Z"}`+"\n", line)
+	assert.Equal(t, `{"file":"logging/logging_test.go:27","func":"github.com/peterebden/go-cli-init/logging.TestJSONFormatter","level":"info","module":"test_module","msg":"hello world","time":"1970-01-01T00:00:00.000Z"}`+"\n", line)
 }

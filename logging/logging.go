@@ -1,6 +1,6 @@
 // Package cli contains initialisation functions for go-flags and go-logging.
 // It facilitates sharing them between several projects.
-package cli
+package logging
 
 import (
 	"encoding/json"
