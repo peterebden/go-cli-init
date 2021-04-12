@@ -24,7 +24,9 @@ func ParseFlags(appname string, data interface{}, args []string, opts flags.Opti
 	if completionHandler != nil {
 		parser.CompletionHandler = func(items []flags.Completion) { completionHandler(parser, items) }
 	}
-	parser.AddGroup(appname+" options", "", data)
+	if _, err := parser.AddGroup(appname+" options", "", data); err != nil {
+		return nil, nil, err
+	}
 	extraArgs, err := parser.ParseArgs(args[1:])
 	if err != nil {
 		if t, ok := err.(*flags.Error); ok && t.Type == flags.ErrHelp {
