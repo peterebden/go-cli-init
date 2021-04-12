@@ -50,7 +50,11 @@ func ParseFlagsOrDie(appname string, data interface{}) string {
 // It returns the active command if there is one.
 func ParseFlagsFromArgsOrDie(appname string, data interface{}, args []string) string {
 	parser, extraArgs, err := ParseFlags(appname, data, args, flags.HelpFlag|flags.PassDoubleDash, nil)
-	if err != nil {
+	if err != nil && parser == nil {
+		// Most likely this is something structurally wrong with the flags setup.
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	} else if err != nil {
 		writeUsage(data)
 		parser.WriteHelp(os.Stderr)
 		fmt.Fprintf(os.Stderr, "\n%s\n", err)
