@@ -21,7 +21,7 @@ func TestParseVerbosity(t *testing.T) {
 
 func TestJSONFormatter(t *testing.T) {
 	backend := logging.InitForTesting(logging.DEBUG)
-	logging.SetFormatter(logFormatter(nil, true))
+	logging.SetFormatter(logFormatter(nil, true, false, false))
 	log := logging.MustGetLogger("test_module")
 	log.Infof("hello %s", "world")
 	line := backend.Head().Record.Formatted(0)

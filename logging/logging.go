@@ -28,6 +28,9 @@ const MaxVerbosity Verbosity = Verbosity(logging.DEBUG)
 // MinVerbosity is the maximum verbosity we support.
 const MinVerbosity Verbosity = Verbosity(logging.ERROR)
 
+// An open file handle for file-based logging.
+var logFile *os.File
+
 // UnmarshalFlag implements flag parsing.
 // It accepts input in three forms:
 // As an integer level, -v 4 (where -v 1 == warning & error only)
@@ -74,13 +77,45 @@ func (v *Verbosity) fromInt(i int) error {
 	return nil
 }
 
-// InitLogging initialises logging backends.
-func InitLogging(verbosity Verbosity) LogLevelInfo {
-	return initialiseLogging(verbosity, false)
+// An Options contains various logging-related options.
+type Options struct{
+	Verbosity         Verbosity `short:"v" long:"verbosity" description:"Verbosity of output (error, warning, notice, info, debug)" default:"warning"`
+	LogFile           string    `long:"log_file" description:"File to echo full logging output to" default:"plz-out/log/build.log"`
+	LogFileLevel      Verbosity `long:"log_file_level" description:"Log level for file output" default:"debug"`
+	LogAppend         bool      `long:"log_append" description:"Append log to existing file instead of overwriting its content. If not set, a new file will be chosen if the existing one is already open."`
+	Colour            bool      `long:"colour" description:"Forces coloured output."`
+	NoColour          bool      `long:"nocolour" description:"Forces colourless output."`
+	Structured        bool      `long:"structured_logs" env:"STRUCTURED_LOGS" description:"Output logs in structured (JSON) format"`
 }
 
-func initialiseLogging(verbosity Verbosity, structured bool) LogLevelInfo {
-	backend := initLogging(verbosity, os.Stderr, structured)
+func InitLoggingOptions(opts *Options) (LogLevelInfo, error) {
+	info := initialiseLogging(opts.Verbosity, opts.Structured, opts.Colour, opts.NoColour)
+	if opts.LogFile == "" {
+		return info, nil
+	}
+	if err := os.MkdirAll(path.Dir(opts.LogFile), os.ModeDir|0755); err != nil {
+		return info, err
+	}
+	flags := os.O_RDWR | os.O_CREATE | os.O_TRUNC
+	if opts.LogAppend {
+		flags = os.O_RDWR | os.O_CREATE | os.O_APPEND
+	}
+	f, err := os.OpenFile(opts.LogFile, flags, 0664)
+	if err != nil {
+		return info, err
+	}
+	logFile = f
+	logging.SetBackend(logInfo.backend, initLogging(opts.LogFileLevel, f, opts.Structured, false, true))
+	return info, nil
+}
+
+// InitLogging initialises logging backends.
+func InitLogging(verbosity Verbosity) LogLevelInfo {
+	return initialiseLogging(verbosity, false, false, false)
+}
+
+func initialiseLogging(verbosity Verbosity, structured, coloured, colourless bool) LogLevelInfo {
+	backend := initLogging(verbosity, os.Stderr, structured, coloured, colourless)
 	logging.SetBackend(backend)
 	logInfo.backend = backend
 	return &logInfo
@@ -100,19 +135,12 @@ func MustInitFileLogging(stderrVerbosity, fileVerbosity Verbosity, filename stri
 // InitStructuredLogging is like InitFileLogging but allows specifying whether the output should be
 // structured as JSON.
 func InitStructuredLogging(stderrVerbosity, fileVerbosity Verbosity, filename string, structured bool) (LogLevelInfo, error) {
-	info := initialiseLogging(stderrVerbosity, structured)
-	if filename == "" {
-		return info, nil
-	}
-	if err := os.MkdirAll(path.Dir(filename), os.ModeDir|0755); err != nil {
-		return info, err
-	}
-	f, err := os.Create(filename)
-	if err != nil {
-		return info, err
-	}
-	logging.SetBackend(logInfo.backend, initLogging(fileVerbosity, f, structured))
-	return info, nil
+	return InitLoggingOptions(&Options{
+		Verbosity:    stderrVerbosity,
+		LogFile:      filename,
+		LogFileLevel: fileVerbosity,
+		Structured:   structured,
+	})
 }
 
 // MustInitStructuredLogging is like InitStructuredLogging but dies on any errors.
@@ -124,24 +152,43 @@ func MustInitStructuredLogging(stderrVerbosity, fileVerbosity Verbosity, filenam
 	return info
 }
 
-func initLogging(verbosity Verbosity, out *os.File, structured bool) logging.LeveledBackend {
+// CloseFileLogging closes any open file-based logging (i.e. anything opened via
+// a call to InitFileLogging or its friends).
+func CloseFileLogging() error {
+	if logFile == nil {
+		return nil
+	}
+	return logFile.Close()
+}
+
+func initLogging(verbosity Verbosity, out *os.File, structured, coloured, colourless bool) logging.LeveledBackend {
 	level := logging.Level(verbosity)
 	backend := logging.NewLogBackend(out, "", 0)
-	backendFormatted := logging.NewBackendFormatter(backend, logFormatter(out, structured))
+	backendFormatted := logging.NewBackendFormatter(backend, logFormatter(out, structured, coloured, colourless))
 	backendLeveled := logging.AddModuleLevel(backendFormatted)
 	backendLeveled.SetLevel(level, "")
 	return backendLeveled
 }
 
-func logFormatter(f *os.File, structured bool) logging.Formatter {
+func logFormatter(f *os.File, structured, coloured, colourless bool) logging.Formatter {
 	if structured {
 		return jsonFormatter{}
 	}
 	formatStr := "%{time:15:04:05.000} %{level:7s}: %{message}"
-	if terminal.IsTerminal(int(f.Fd())) {
+	if shouldColour(f, coloured, colourless) {
 		formatStr = "%{color}" + formatStr + "%{color:reset}"
 	}
 	return logging.MustStringFormatter(formatStr)
+}
+
+// shouldColour returns whether we should show coloured output for the given file.
+func shouldColour(f *os.File, coloured, colourless bool) bool {
+	if coloured {
+		return true
+	} else if colourless {
+		return false
+	}
+	return terminal.IsTerminal(int(f.Fd()))
 }
 
 // getLoggerName returns the name of the calling package as a logger name (e.g. "github.com.peterebden.cli")
