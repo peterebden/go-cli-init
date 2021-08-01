@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 
 	"golang.org/x/crypto/ssh/terminal"
 	"gopkg.in/op/go-logging.v1"
@@ -30,6 +31,9 @@ const MinVerbosity Verbosity = Verbosity(logging.ERROR)
 
 // An open file handle for file-based logging.
 var logFile *os.File
+
+// fileAttempts is the number of log files we attempt to open before giving up.
+const fileAttempts = 10
 
 // UnmarshalFlag implements flag parsing.
 // It accepts input in three forms:
@@ -93,20 +97,62 @@ func InitLoggingOptions(opts *Options) (LogLevelInfo, error) {
 	if opts.LogFile == "" {
 		return info, nil
 	}
-	if err := os.MkdirAll(path.Dir(opts.LogFile), os.ModeDir|0755); err != nil {
-		return info, err
-	}
-	flags := os.O_RDWR | os.O_CREATE | os.O_TRUNC
-	if opts.LogAppend {
-		flags = os.O_RDWR | os.O_CREATE | os.O_APPEND
-	}
-	f, err := os.OpenFile(opts.LogFile, flags, 0664)
+	f, err := initLogFile(opts.LogFile, opts.LogAppend)
 	if err != nil {
 		return info, err
 	}
 	logFile = f
 	logging.SetBackend(logInfo.backend, initLogging(opts.LogFileLevel, f, opts.Structured, false, true))
 	return info, nil
+}
+
+// openLogFile opens a file as a logging backend.
+// If append is true, it always opens the given filename and appends to it.
+// If not, it will attempt to find an unlocked log file starting from the given name and use that.
+func initLogFile(filename string, append bool) (*os.File, error) {
+	if err := os.MkdirAll(path.Dir(filename), os.ModeDir|0755); err != nil {
+		return nil, err
+	}
+	if append {
+		f, err := os.OpenFile(filename, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0664)
+		if err != nil {
+			return nil, err
+		}
+		// Grab an advisory lock on the file. Note that in this path it's best-effort only.
+		syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
+		return f, nil
+	}
+	// If we're not appending, try to find an available log file.
+	for i := 0; i < fileAttempts; i++ {
+		// N.B. Don't want to truncate here because someone else might be writing.
+		f, err := os.OpenFile(logFileName(filename, i), os.O_RDWR | os.O_CREATE, 0664)
+		if err != nil {
+			return nil, err
+		}
+		// See if we can acquire a lock. If not we will try another file.
+		if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
+			// Locking this file failed (EWOULDBLOCK is the most likely)
+			f.Close()
+			continue
+		}
+		// OK, we have the lock, now reset the file.
+		if err := f.Truncate(0); err != nil {
+			f.Close()
+			return nil, err
+		} else if _, err := f.Seek(0, 0); err != nil {
+			f.Close()
+			return nil, err
+		}
+		return f, nil
+	}
+	return nil, fmt.Errorf("Failed to acquire a log file after %d attempts", fileAttempts)
+}
+
+func logFileName(base string, attempt int) string {
+	if attempt == 0 {
+		return base
+	}
+	return base + "." + strconv.Itoa(attempt)
 }
 
 // InitLogging initialises logging backends.
