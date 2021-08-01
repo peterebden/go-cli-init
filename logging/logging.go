@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"reflect"
 	"runtime"
 	"strconv"
 	"strings"
@@ -82,28 +83,51 @@ func (v *Verbosity) fromInt(i int) error {
 }
 
 // An Options contains various logging-related options.
-type Options struct{
-	Verbosity         Verbosity `short:"v" long:"verbosity" description:"Verbosity of output (error, warning, notice, info, debug)" default:"warning"`
-	LogFile           string    `long:"log_file" description:"File to echo full logging output to" default:"plz-out/log/build.log"`
-	LogFileLevel      Verbosity `long:"log_file_level" description:"Log level for file output" default:"debug"`
-	LogAppend         bool      `long:"log_append" description:"Append log to existing file instead of overwriting its content. If not set, a new file will be chosen if the existing one is already open."`
-	Colour            bool      `long:"colour" description:"Forces coloured output."`
-	NoColour          bool      `long:"nocolour" description:"Forces colourless output."`
-	Structured        bool      `long:"structured_logs" env:"STRUCTURED_LOGS" description:"Output logs in structured (JSON) format"`
+type Options struct {
+	Verbosity     Verbosity `short:"v" long:"verbosity" description:"Verbosity of output (error, warning, notice, info, debug)" default:"warning"`
+	File          string    `long:"file" description:"File to echo full logging output to"`
+	FileVerbosity Verbosity `long:"file_verbosity" description:"Log level for file output" default:"debug"`
+	Append        bool      `long:"append" description:"Append log to existing file instead of overwriting its content. If not set, a new file will be chosen if the existing one is already open."`
+	Colour        bool      `long:"colour" description:"Forces coloured output."`
+	NoColour      bool      `long:"nocolour" description:"Forces colourless output."`
+	Structured    bool      `long:"structured_logs" env:"STRUCTURED_LOGS" description:"Output logs in structured (JSON) format"`
 }
 
+// InitLoggingOptions initialises logging from the given options struct.
 func InitLoggingOptions(opts *Options) (LogLevelInfo, error) {
 	info := initialiseLogging(opts.Verbosity, opts.Structured, opts.Colour, opts.NoColour)
-	if opts.LogFile == "" {
+	if opts.File == "" {
 		return info, nil
 	}
-	f, err := initLogFile(opts.LogFile, opts.LogAppend)
+	f, err := initLogFile(opts.File, opts.Append)
 	if err != nil {
 		return info, err
 	}
 	logFile = f
-	logging.SetBackend(logInfo.backend, initLogging(opts.LogFileLevel, f, opts.Structured, false, true))
+	logging.SetBackend(logInfo.backend, initLogging(opts.FileVerbosity, f, opts.Structured, false, true))
 	return info, nil
+}
+
+// MustInitLoggingOptions is like InitLoggingOptions but dies on error.
+func MustInitLoggingOptions(opts *Options) LogLevelInfo {
+	info, err := InitLoggingOptions(opts)
+	if err != nil {
+		log.Fatalf("Failed to open log file: %s", err)
+	}
+	return info
+}
+
+// InitLoggingOptionsLike initialises logging from a struct that is assignable to
+// an Options. This is useful for a caller to customise their own flags.
+// It panics if the struct is not assignable.
+func InitLoggingOptionsLike(optionsLike interface{}) (LogLevelInfo, error) {
+	v := reflect.ValueOf(optionsLike)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	var opts Options
+	reflect.ValueOf(&opts).Elem().Set(v)
+	return InitLoggingOptions(&opts)
 }
 
 // openLogFile opens a file as a logging backend.
@@ -114,7 +138,7 @@ func initLogFile(filename string, append bool) (*os.File, error) {
 		return nil, err
 	}
 	if append {
-		f, err := os.OpenFile(filename, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0664)
+		f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0664)
 		if err != nil {
 			return nil, err
 		}
@@ -125,7 +149,7 @@ func initLogFile(filename string, append bool) (*os.File, error) {
 	// If we're not appending, try to find an available log file.
 	for i := 0; i < fileAttempts; i++ {
 		// N.B. Don't want to truncate here because someone else might be writing.
-		f, err := os.OpenFile(logFileName(filename, i), os.O_RDWR | os.O_CREATE, 0664)
+		f, err := os.OpenFile(logFileName(filename, i), os.O_RDWR|os.O_CREATE, 0664)
 		if err != nil {
 			return nil, err
 		}
@@ -182,10 +206,10 @@ func MustInitFileLogging(stderrVerbosity, fileVerbosity Verbosity, filename stri
 // structured as JSON.
 func InitStructuredLogging(stderrVerbosity, fileVerbosity Verbosity, filename string, structured bool) (LogLevelInfo, error) {
 	return InitLoggingOptions(&Options{
-		Verbosity:    stderrVerbosity,
-		LogFile:      filename,
-		LogFileLevel: fileVerbosity,
-		Structured:   structured,
+		Verbosity:     stderrVerbosity,
+		File:          filename,
+		FileVerbosity: fileVerbosity,
+		Structured:    structured,
 	})
 }
 
