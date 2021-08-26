@@ -1,4 +1,4 @@
-module github.com/peterebden/go-cli-init/v3
+module github.com/samwestmoreland/go-cli-init/v4
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

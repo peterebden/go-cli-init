@@ -1,4 +1,4 @@
-package cli
+package flags
 
 import (
 	"testing"
@@ -40,4 +40,13 @@ func TestByteSize(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(extraArgs))
 	assert.EqualValues(t, 2000000, opts.S)
+}
+
+func TestBadFlagsErrors(t *testing.T) {
+	opts := struct {
+		S1 ByteSize `short:"s"`
+		S2 ByteSize `short:"s"`
+	}{}
+	_, _, err := ParseFlags("test", &opts, []string{"test"}, 0, nil)
+	assert.Error(t, err)
 }

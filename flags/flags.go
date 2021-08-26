@@ -1,4 +1,4 @@
-package cli
+package flags
 
 import (
 	"fmt"
@@ -16,6 +16,10 @@ import (
 // A CompletionHandler is the type of function that our flags library uses to handle completions.
 type CompletionHandler func(parser *flags.Parser, items []flags.Completion)
 
+// AdditionalUsageInfo is a function that can seek out auxiliary flags and add
+// them to the core list of options.
+type AdditionalUsageInfo func(parser *flags.Parser)
+
 // ParseFlags parses the app's flags and returns the parser, any extra arguments, and any error encountered.
 // It may exit if certain options are encountered (eg. --help).
 func ParseFlags(appname string, data interface{}, args []string, opts flags.Options, completionHandler CompletionHandler) (*flags.Parser, []string, error) {
@@ -24,10 +28,12 @@ func ParseFlags(appname string, data interface{}, args []string, opts flags.Opti
 	if completionHandler != nil {
 		parser.CompletionHandler = func(items []flags.Completion) { completionHandler(parser, items) }
 	}
-	parser.AddGroup(appname+" options", "", data)
+	if _, err := parser.AddGroup(appname+" options", "", data); err != nil {
+		return nil, nil, err
+	}
 	extraArgs, err := parser.ParseArgs(args[1:])
 	if err != nil {
-		if err.(*flags.Error).Type == flags.ErrHelp {
+		if t, ok := err.(*flags.Error); ok && t.Type == flags.ErrHelp {
 			writeUsage(data)
 			fmt.Printf("%s\n", err)
 			os.Exit(0)
@@ -48,7 +54,11 @@ func ParseFlagsOrDie(appname string, data interface{}) string {
 // It returns the active command if there is one.
 func ParseFlagsFromArgsOrDie(appname string, data interface{}, args []string) string {
 	parser, extraArgs, err := ParseFlags(appname, data, args, flags.HelpFlag|flags.PassDoubleDash, nil)
-	if err != nil {
+	if err != nil && parser == nil {
+		// Most likely this is something structurally wrong with the flags setup.
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	} else if err != nil {
 		writeUsage(data)
 		parser.WriteHelp(os.Stderr)
 		fmt.Fprintf(os.Stderr, "\n%s\n", err)
