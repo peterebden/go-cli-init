@@ -50,15 +50,10 @@ go_get(
     revision = "1b2967e3c290b7c545b3db0deeda16e9be4f98a2",
 )
 
-filegroup(
-    name = "my-go-flags",
-    system_srcs = ["/home/swestmoreland/go-flags"],
-)
-
-go_module(
+go_get(
     name = "go-flags",
-    module = "github.com/thought-machine/go-flags",
-    download = ":my-go-flags",
+    get = "github.com/thought-machine/go-flags",
+    revision = "v1.4.0",
 )
 
 go_get(
