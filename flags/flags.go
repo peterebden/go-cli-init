@@ -22,11 +22,14 @@ type AdditionalUsageInfo func(parser *flags.Parser)
 
 // ParseFlags parses the app's flags and returns the parser, any extra arguments, and any error encountered.
 // It may exit if certain options are encountered (eg. --help).
-func ParseFlags(appname string, data interface{}, args []string, opts flags.Options, completionHandler CompletionHandler) (*flags.Parser, []string, error) {
+func ParseFlags(appname string, data interface{}, args []string, opts flags.Options, completionHandler CompletionHandler, additionalUsageInfo AdditionalUsageInfo) (*flags.Parser, []string, error) {
 	parser := flags.NewNamedParser(path.Base(args[0]), opts)
 	parser.NamespaceDelimiter = "_"
 	if completionHandler != nil {
 		parser.CompletionHandler = func(items []flags.Completion) { completionHandler(parser, items) }
+	}
+	if additionalUsageInfo != nil {
+		parser.AdditionalUsageInfo = func() { additionalUsageInfo(parser) }
 	}
 	if _, err := parser.AddGroup(appname+" options", "", data); err != nil {
 		return nil, nil, err
@@ -53,7 +56,7 @@ func ParseFlagsOrDie(appname string, data interface{}) string {
 // flags passed.
 // It returns the active command if there is one.
 func ParseFlagsFromArgsOrDie(appname string, data interface{}, args []string) string {
-	parser, extraArgs, err := ParseFlags(appname, data, args, flags.HelpFlag|flags.PassDoubleDash, nil)
+	parser, extraArgs, err := ParseFlags(appname, data, args, flags.HelpFlag|flags.PassDoubleDash, nil, nil)
 	if err != nil && parser == nil {
 		// Most likely this is something structurally wrong with the flags setup.
 		fmt.Fprintf(os.Stderr, "%s\n", err)
