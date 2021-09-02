@@ -1,8 +1,8 @@
 package flags
 
 import (
-	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"reflect"
@@ -19,7 +19,7 @@ type CompletionHandler func(parser *flags.Parser, items []flags.Completion)
 
 // AdditionalUsageInfo is the type of function that seeks out auxiliary options and adds them
 // to the end of usage info
-type AdditionalUsageInfo func(parser *flags.Parser, wr *bufio.Writer)
+type AdditionalUsageInfo func(parser *flags.Parser, wr *io.Writer)
 
 // ParseFlags parses the app's flags and returns the parser, any extra arguments, and any error encountered.
 // It may exit if certain options are encountered (eg. --help).
