@@ -17,8 +17,8 @@ import (
 // A CompletionHandler is the type of function that our flags library uses to handle completions.
 type CompletionHandler func(parser *flags.Parser, items []flags.Completion)
 
-// AdditionalUsageInfo is the type of function that seeks out auxiliary options and writes them
-// to usage info
+// AdditionalUsageInfo is the type of function that seeks out auxiliary options and adds them
+// to the end of usage info
 type AdditionalUsageInfo func(parser *flags.Parser, wr *bufio.Writer)
 
 // ParseFlags parses the app's flags and returns the parser, any extra arguments, and any error encountered.
