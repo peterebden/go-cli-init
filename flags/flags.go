@@ -1,6 +1,7 @@
 package flags
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"path"
@@ -18,7 +19,7 @@ type CompletionHandler func(parser *flags.Parser, items []flags.Completion)
 
 // AdditionalUsageInfo is a function that can seek out auxiliary flags and add
 // them to the core list of options.
-type AdditionalUsageInfo func(parser *flags.Parser)
+type AdditionalUsageInfo func(parser *flags.Parser, wr *bufio.Writer)
 
 // ParseFlags parses the app's flags and returns the parser, any extra arguments, and any error encountered.
 // It may exit if certain options are encountered (eg. --help).
@@ -29,7 +30,7 @@ func ParseFlags(appname string, data interface{}, args []string, opts flags.Opti
 		parser.CompletionHandler = func(items []flags.Completion) { completionHandler(parser, items) }
 	}
 	if additionalUsageInfo != nil {
-		parser.PrintAdditionalUsageInfo = func() { additionalUsageInfo(parser) }
+		parser.PrintAdditionalUsageInfo = func(wr *bufio.Writer) { additionalUsageInfo(parser, wr) }
 	}
 	if _, err := parser.AddGroup(appname+" options", "", data); err != nil {
 		return nil, nil, err
@@ -48,15 +49,15 @@ func ParseFlags(appname string, data interface{}, args []string, opts flags.Opti
 // ParseFlagsOrDie parses the app's flags and dies if unsuccessful.
 // Also dies if any unexpected arguments are passed.
 // It returns the active command if there is one.
-func ParseFlagsOrDie(appname string, data interface{}) string {
-	return ParseFlagsFromArgsOrDie(appname, data, os.Args)
+func ParseFlagsOrDie(appname string, data interface{}, additionalUsageInfo AdditionalUsageInfo) string {
+	return ParseFlagsFromArgsOrDie(appname, data, os.Args, additionalUsageInfo)
 }
 
 // ParseFlagsFromArgsOrDie is similar to ParseFlagsOrDie but allows control over the
 // flags passed.
 // It returns the active command if there is one.
-func ParseFlagsFromArgsOrDie(appname string, data interface{}, args []string) string {
-	parser, extraArgs, err := ParseFlags(appname, data, args, flags.HelpFlag|flags.PassDoubleDash, nil, nil)
+func ParseFlagsFromArgsOrDie(appname string, data interface{}, args []string, additionalUsageInfo AdditionalUsageInfo) string {
+	parser, extraArgs, err := ParseFlags(appname, data, args, flags.HelpFlag|flags.PassDoubleDash, nil, additionalUsageInfo)
 	if err != nil && parser == nil {
 		// Most likely this is something structurally wrong with the flags setup.
 		fmt.Fprintf(os.Stderr, "%s\n", err)
