@@ -30,7 +30,7 @@ func ParseFlags(appname string, data interface{}, args []string, opts flags.Opti
 		parser.CompletionHandler = func(items []flags.Completion) { completionHandler(parser, items) }
 	}
 	if additionalUsageInfo != nil {
-		parser.PrintAdditionalUsageInfo = func(wr *bufio.Writer) { additionalUsageInfo(parser, wr) }
+		parser.PrintAdditionalUsageInfo = func(wr *io.Writer) { additionalUsageInfo(parser, wr) }
 	}
 	if _, err := parser.AddGroup(appname+" options", "", data); err != nil {
 		return nil, nil, err
