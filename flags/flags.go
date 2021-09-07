@@ -19,7 +19,7 @@ type CompletionHandler func(parser *flags.Parser, items []flags.Completion)
 
 // AdditionalUsageInfo is the type of function that seeks out auxiliary options and adds them
 // to the end of usage info
-type AdditionalUsageInfo func(parser *flags.Parser, wr io.Writer)
+type AdditionalUsageInfo func(parser *flags.Parser, wr *io.Writer)
 
 // ParseFlags parses the app's flags and returns the parser, any extra arguments, and any error encountered.
 // It may exit if certain options are encountered (eg. --help).
@@ -30,7 +30,7 @@ func ParseFlags(appname string, data interface{}, args []string, opts flags.Opti
 		parser.CompletionHandler = func(items []flags.Completion) { completionHandler(parser, items) }
 	}
 	if additionalUsageInfo != nil {
-		parser.PrintAdditionalUsageInfo = func(wr io.Writer) { additionalUsageInfo(parser, wr) }
+		parser.PrintAdditionalUsageInfo = func(wr *io.Writer) { additionalUsageInfo(parser, wr) }
 	}
 	if _, err := parser.AddGroup(appname+" options", "", data); err != nil {
 		return nil, nil, err
