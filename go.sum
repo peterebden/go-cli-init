@@ -10,6 +10,8 @@ github.com/thought-machine/go-flags v1.4.0 h1:0y+thpA6suEZcnPV0NldwRBrsyHvNAj/cq
 github.com/thought-machine/go-flags v1.4.0/go.mod h1:Yv0jJ1l0DXAxT1MQfHm+Lk+JTubX+YQALrC+fn9VUxE=
 github.com/thought-machine/go-flags v1.5.0 h1:w0TqJzliGoemL/byvtrHyneTtiWjVDUJxbejnCxg1pw=
 github.com/thought-machine/go-flags v1.5.0/go.mod h1:+r2g8uGwgGM7IGZzmMS97mKBFLDbW6vgFO1jxp0rDmg=
+github.com/thought-machine/go-flags v1.6.0 h1:r6hUwmL9E/OUO28YxvxMyTUZ5sxVy8VYj5Oui0h22VU=
+github.com/thought-machine/go-flags v1.6.0/go.mod h1:+r2g8uGwgGM7IGZzmMS97mKBFLDbW6vgFO1jxp0rDmg=
 golang.org/x/crypto v0.0.0-20181203042331-505ab145d0a9 h1:mKdxBk7AujPs8kU4m80U72y/zjbZ3UcXC7dClwKbUI0=
 golang.org/x/crypto v0.0.0-20181203042331-505ab145d0a9/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
 golang.org/x/sys v0.0.0-20181228144115-9a3f9b0469bb h1:pf3XwC90UUdNPYWZdFjhGBE7DUFuK3Ct1zWmZ65QN30=

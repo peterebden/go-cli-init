@@ -5,7 +5,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v1.2.2
-	github.com/thought-machine/go-flags v1.5.0
+	github.com/thought-machine/go-flags v1.6.0
 	golang.org/x/crypto v0.0.0-20181203042331-505ab145d0a9
 	gopkg.in/op/go-logging.v1 v1.0.0-20160211212156-b2cb9fa56473
 )
