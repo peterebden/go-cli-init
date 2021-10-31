@@ -1,2 +1,5 @@
+[please]
+version = 16.12.1
+
 [go]
 importpath = github.com/peterebden/go-cli-init
