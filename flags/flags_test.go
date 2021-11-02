@@ -72,7 +72,7 @@ func TestActiveCommand(t *testing.T) {
 	assert.Equal(t, "deps", ActiveCommand(parser.Command))
 }
 
-func TestFullActiveCommand(t *testing.T) {
+func TestActiveFullCommand(t *testing.T) {
 	opts := struct {
 		Build struct {
 			Target string
