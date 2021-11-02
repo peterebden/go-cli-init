@@ -1,4 +1,4 @@
-module github.com/peterebden/go-cli-init/v6
+module github.com/peterebden/go-cli-init/v5
 
 require (
 	github.com/dustin/go-humanize v1.0.0

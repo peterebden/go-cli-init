@@ -69,5 +69,26 @@ func TestActiveCommand(t *testing.T) {
 
 	parser, _, err = ParseFlags("App Name", &opts, []string{"/path/to/exe", "query", "deps", "//:target"}, 0, nil, nil)
 	assert.NoError(t, err)
-	assert.Equal(t, "query.deps", ActiveCommand(parser.Command))
+	assert.Equal(t, "deps", ActiveCommand(parser.Command))
+}
+
+func TestFullActiveCommand(t *testing.T) {
+	opts := struct {
+		Build struct {
+			Target string
+		} `command:"build"`
+		Query struct {
+			Deps struct {
+				Target string
+			} `command:"deps"`
+		} `command:"query"`
+	}{}
+
+	parser, _, err := ParseFlags("App Name", &opts, []string{"/path/to/exe", "build", "//:target"}, 0, nil, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, "build", ActiveFullCommand(parser.Command))
+
+	parser, _, err = ParseFlags("App Name", &opts, []string{"/path/to/exe", "query", "deps", "//:target"}, 0, nil, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, "query.deps", ActiveFullCommand(parser.Command))
 }

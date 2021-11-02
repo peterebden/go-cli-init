@@ -79,8 +79,16 @@ func ParseFlagsFromArgsOrDie(appname string, data interface{}, args []string, ad
 	return ""
 }
 
-// ActiveCommand returns the concatenation of all subcommands that make up the command.
+// ActiveCommand returns the name of the currently active command.
 func ActiveCommand(command *flags.Command) string {
+	if command.Active != nil {
+		return ActiveCommand(command.Active)
+	}
+	return command.Name
+}
+
+// ActiveCommand returns the concatenation of all subcommands that make up the command.
+func ActiveFullCommand(command *flags.Command) string {
 	subcommands := make([]string, 0)
 	for command.Active != nil {
 		subcommands = append(subcommands, command.Active.Name)
