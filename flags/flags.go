@@ -87,6 +87,16 @@ func ActiveCommand(command *flags.Command) string {
 	return command.Name
 }
 
+// ActiveCommand returns the concatenation of all subcommands that make up the command.
+func ActiveFullCommand(command *flags.Command) string {
+	subcommands := make([]string, 0)
+	for command.Active != nil {
+		subcommands = append(subcommands, command.Active.Name)
+		command = command.Active
+	}
+	return strings.Join(subcommands, ".")
+}
+
 // writeUsage prints any usage specified on the flag struct.
 func writeUsage(opts interface{}) {
 	if s := getUsage(opts); s != "" {

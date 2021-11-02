@@ -3,9 +3,11 @@ package(default_visibility = ["PUBLIC"])
 go_module(
     name = "go-flags",
     module = "github.com/thought-machine/go-flags",
-    version = "v1.4.0",
+    version = "v1.6.0",
+    deps = [
+        ":unix",
+    ],
 )
-
 go_module(
     name = "humanize",
     module = "github.com/dustin/go-humanize",
