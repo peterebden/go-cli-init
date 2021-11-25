@@ -1,6 +1,6 @@
 go_library(
     name = "flags",
-    srcs = ["flags.go", "stdin.go"],
+    srcs = glob(["*.go"], exclude=["*_test.go"]),
     deps = [
         "//third_party/go:go-flags",
         "//third_party/go:humanize",
@@ -9,7 +9,8 @@ go_library(
 
 go_test(
     name = "flags_test",
-    srcs = ["flags_test.go"],
+    srcs = glob(["*_test.go"]),
+    data = ["test_data"],
     deps = [
         ":flags",
         "//third_party/go:testify",
