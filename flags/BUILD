@@ -1,6 +1,6 @@
 go_library(
     name = "flags",
-    srcs = ["flags.go"],
+    srcs = ["flags.go", "stdin.go"],
     deps = [
         "//third_party/go:go-flags",
         "//third_party/go:humanize",
