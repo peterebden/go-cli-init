@@ -60,10 +60,10 @@ go_module(
 )
 
 go_module(
-    name = "terminal",
-    module = "golang.org/x/crypto",
-    install = ["ssh/terminal"],
-    version = "505ab145d0a99da450461ae2c1a9f6cd10d1f447",
+    name = "term",
+    module = "golang.org/x/term",
+    install = ["."],
+    version = "v0.5.0",
     deps = [":unix"],
 )
 
