@@ -5,7 +5,7 @@ go_library(
     ],
     deps = [
         "//third_party/go:logging",
-        "//third_party/go:terminal",
+        "//third_party/go:term",
     ],
 )
 

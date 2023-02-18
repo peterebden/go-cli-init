@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 	"gopkg.in/op/go-logging.v1"
 )
 
@@ -138,7 +138,7 @@ func logFormatter(f *os.File, structured bool) logging.Formatter {
 		return jsonFormatter{}
 	}
 	formatStr := "%{time:15:04:05.000} %{level:7s}: %{message}"
-	if terminal.IsTerminal(int(f.Fd())) {
+	if term.IsTerminal(int(f.Fd())) {
 		formatStr = "%{color}" + formatStr + "%{color:reset}"
 	}
 	return logging.MustStringFormatter(formatStr)
