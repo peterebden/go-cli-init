@@ -225,20 +225,20 @@ func (f jsonFormatter) Format(calldepth int, r *logging.Record, w io.Writer) err
 }
 
 var jsonLevelNames = []string{
-	"critical",
-	"error",
-	"warning",
-	"notice",
-	"info",
-	"debug",
+	"CRITICAL",
+	"ERROR",
+	"WARNING",
+	"NOTICE",
+	"INFO",
+	"DEBUG",
 }
 
 type jsonEntry struct {
 	File   string `json:"file"`
 	Func   string `json:"func"`
-	Level  string `json:"level"`
+	Level  string `json:"severity"`
 	Module string `json:"module"`
-	Msg    string `json:"msg"`
+	Msg    string `json:"message"`
 	Time   string `json:"time"`
 }
 
